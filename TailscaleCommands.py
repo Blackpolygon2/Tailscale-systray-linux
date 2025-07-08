@@ -43,7 +43,7 @@ def Use_json(*DictItemValue: dict):
     for DictItemValue in DictItemValue:
         # i am so sorry i dont know any other way (;_;)
         data[list(DictItemValue.keys())[0]] = list(DictItemValue.values())[0]
-        print(data)
+        
         with open('State.json', 'w') as file:
             json.dump(data, file, indent=4)
 
@@ -65,7 +65,7 @@ def GetTailwindStatus():
         if ip.strip() in line:
             return (line.strip())
 
-
+ 
 def pingWebsite(target_url, count=4):
     try:
         if platform.system() == "Windows":
@@ -89,7 +89,6 @@ def pingWebsite(target_url, count=4):
 def stateCallback(itemRequested=""):
     if "exit" in GetTailwindStatus():
         Use_json({"ExitNode": True})
-
     match itemRequested:
         case "onOff":
             return pingWebsite("100.100.100.100", count=2)
@@ -124,35 +123,37 @@ def executeTailscaleSetToggle(ItemToBeSet: str):
     """
     match ItemToBeSet:
         case "exitNode":
-            is_exit_node_on = Use_json('exitNode')
+            is_exit_node_on = Use_json()['ExitNode']
             if is_exit_node_on:
-                print("🏁 Exit Node advertising is ON, turning it OFF...")
+                print(" Exit Node advertising is ON, turning it OFF...")
                 executeComand("tailscale set --advertise-exit-node=false")
                 Use_json({"ExitNode": False})
             else:
-                print("🏁 Exit Node advertising is OFF, turning it ON...")
+                setExitNode("off")
+                print(" Exit Node advertising is OFF, turning it ON...")
                 executeComand("tailscale set --advertise-exit-node")
+                
                 Use_json({"ExitNode": True})
 
         case "ssh":
-            is_ssh_on = Use_json('ssh')
+            is_ssh_on = Use_json()['SSH']
             if is_ssh_on:
-                print("🔒 SSH is ON, turning it OFF...")
+                print(" SSH is ON, turning it OFF...")
                 executeComand("tailscale set --ssh=false")
                 Use_json({"SSH": False})
             else:
-                print("🔒 SSH is OFF, turning it ON...")
+                print(" SSH is OFF, turning it ON...")
                 executeComand("tailscale set --ssh")
                 Use_json({"SSH": True})
 
         case "acceptRoutes":
-            are_routes_accepted = Use_json('AcceptRoutes')
+            are_routes_accepted = Use_json()['AcceptRoutes']
             if are_routes_accepted:
-                print("🗺️ Accepting routes is ON, turning it OFF...")
+                print(" Accepting routes is ON, turning it OFF...")
                 executeComand("tailscale set --accept-routes=false")
                 Use_json({"AcceptRoutes": False})
             else:
-                print("🗺️ Accepting routes is OFF, turning it ON...")
+                print(" Accepting routes is OFF, turning it ON...")
                 executeComand("tailscale set --accept-routes")
                 Use_json({"AcceptRoutes": True})
 
@@ -161,18 +162,28 @@ def executeTailscaleSetToggle(ItemToBeSet: str):
                 f"Error: Unknown setting '{ItemToBeSet}'. Please use 'exitNode', 'ssh', or 'acceptRoutes'.")
 
 
-def setExitNode(Nodeip: str):
+def setExitNode(NodeName: str):
 
     if stateCallback('exitNode'):
         runCommand("tailscale set --advertise-exit-node=false")
-    if Nodeip != "off":
+    if NodeName != "off":
+        #turning on exit node
         stateCallback("t")
-        runCommand(f"tailscale set --exit-node {Nodeip}")
+        all_nodes = Use_json()["ExitNodes"]
+        target_node_ip = all_nodes[NodeName]
+        runCommand(f"tailscale set --exit-node {target_node_ip}")
+        Use_json({"UsedExitNode": NodeName})
         Use_json({"UsingExitNode": True})
+        Use_json({"ExitNode": False})
+        
+        
     else:
-        runCommand(f"tailscale set --exit-node")
+        runCommand(f"tailscale set --exit-node=")
+        Use_json({"UsedExitNode": "None"})
         Use_json({"UsingExitNode": False})
 
 
 # print(Use_json()["SSH"])
 # Use_json({"SSH":True})
+#setExitNode('off')
+

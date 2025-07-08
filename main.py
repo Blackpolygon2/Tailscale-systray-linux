@@ -1,4 +1,4 @@
-from TailscaleCommands import executeComand,Use_json
+from TailscaleCommands import executeComand,Use_json,stateCallback,setExitNode
 import os, json, subprocess
 
 
@@ -10,6 +10,7 @@ def makeJSON():
     "ExitNode": False,
     "AcceptRoutes": False,
     "UsingExitNode": False,
+    "UsedExitNode": "",
     "ExitNodes": {},
     }
     filename = 'State.json'
@@ -34,6 +35,9 @@ def SetSHHandRoutes():
     else:
         runCommand("tailscale set --accept-routes=false")
         Use_json({"AcceptRoutes":False})
+        
+    if Use_json()["UsingExitNode"]:
+        setExitNode(Use_json()["UsedExitNode"])
 
 def indexExitNodes():
     exitnodes = subprocess.run("tailscale exit-node list".split(), capture_output=True, text=True).stdout.split("\n")

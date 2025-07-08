@@ -1,7 +1,8 @@
 {
     "SSH": false,
-    "ExitNode": true,
+    "ExitNode": false,
     "AcceptRoutes": false,
+    "UsingExitNode": false,
     "ExitNodes": {
         "al-tia-wg-001.mullvad.ts.net": "100.91.198.95",
         "au-adl-wg-301.mullvad.ts.net": "100.65.216.68",
@@ -31,7 +32,7 @@
         "fr-par-wg-001.mullvad.ts.net": "100.120.246.18",
         "de-dus-wg-001.mullvad.ts.net": "100.78.4.15",
         "de-ber-wg-001.mullvad.ts.net": "100.123.112.109",
-        "Germany": "100.99.78.116",
+        "Germany": "100.78.117.118",
         "gr-ath-wg-101.mullvad.ts.net": "100.73.33.78",
         "hk-hkg-wg-201.mullvad.ts.net": "100.127.156.146",
         "hu-bud-wg-101.mullvad.ts.net": "100.114.248.6",
@@ -43,7 +44,7 @@
         "Japan": "100.70.134.47",
         "my-kul-wg-001.mullvad.ts.net": "100.98.10.95",
         "mx-qro-wg-001.mullvad.ts.net": "100.109.204.162",
-        "Netherlands": "100.123.199.85",
+        "Netherlands": "100.116.237.90",
         "nz-akl-wg-301.mullvad.ts.net": "100.123.7.85",
         "ng-los-wg-001.mullvad.ts.net": "100.85.38.61",
         "no-svg-wg-001.mullvad.ts.net": "100.118.155.102",
@@ -69,12 +70,12 @@
         "tr-ist-wg-001.mullvad.ts.net": "100.83.81.112",
         "gb-mnc-wg-201.mullvad.ts.net": "100.81.224.121",
         "gb-glw-wg-001.mullvad.ts.net": "100.80.218.70",
-        "UK": "100.68.61.55",
+        "UK": "100.68.27.73",
         "us-chi-wg-301.mullvad.ts.net": "100.117.167.110",
         "us-qas-wg-101.mullvad.ts.net": "100.65.194.122",
         "us-atl-wg-001.mullvad.ts.net": "100.126.111.61",
         "us-bos-wg-001.mullvad.ts.net": "100.85.243.129",
-        "USA": "100.87.99.113",
+        "USA": "100.126.184.121",
         "us-den-wg-101.mullvad.ts.net": "100.99.135.32",
         "us-det-wg-001.mullvad.ts.net": "100.100.52.113",
         "us-hou-wg-001.mullvad.ts.net": "100.82.151.77",
@@ -89,5 +90,6 @@
         "us-uyk-wg-201.mullvad.ts.net": "100.67.26.126",
         "us-was-wg-001.mullvad.ts.net": "100.115.163.94",
         "ua-iev-wg-001.mullvad.ts.net": "100.93.242.75"
-    }
+    },
+    "UsedExitNode": "None"
 }
