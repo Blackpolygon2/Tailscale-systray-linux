@@ -1,0 +1,48 @@
+/* General window styling */
+window {
+    background-color: #2a2a2e;
+}
+
+/* Sidebar styling */
+.sidebar {
+    background-color: #1e1e20;
+    padding: 15px;
+}
+
+/* Main content area styling */
+.content-area {
+    padding: 10px;
+}
+
+/* The rounded "card" view */
+.card {
+    background-color: #333337;
+    border-radius: 12px;
+    padding: 20px;
+    /* Basic box shadow */
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Button styling */
+.pill-button {
+    background-color: #007bff;
+    color: white;
+    border-radius: 20px;
+    border: none;
+    padding: 8px;
+    font-weight: bold;
+}
+
+.danger-button {
+    background-color: #dc3545;
+    color: white;
+    border-radius: 4px;
+    border: none;
+    padding: 8px;
+}
+
+/* Larger title font */
+.title-1 {
+    font-size: 1.5em;
+    font-weight: bold;
+}

@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<!DOCTYPE cambalache-project SYSTEM "cambalache-project.dtd">
+<!-- Created with Cambalache 0.96.1 -->
+<cambalache-project version="0.96.0" target_tk="gtk-4.0">
+  <css filename="style" is_global="1"/>
+  <ui filename="tailscale gui.ui" sha256="f6e2645296170e4efbaaf45cd49b517b9774162b1cb6ac6d20667caa09323b8c">
+    <css-provider>style</css-provider>
+  </ui>
+  <ui>
+    <content><![CDATA[<interface/>
+]]></content>
+  </ui>
+  <ui template-class="ExampleWindow" filename="../../../py-gtk/src/libadwaita-widgets/alert-dialog/ui/MainWindow.ui" sha256="714ed263d9c9682b15511e4964b4460b430c2d1abaa33a1a6c917b4bd9eb3431"/>
+</cambalache-project>

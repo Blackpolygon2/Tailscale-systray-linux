@@ -87,8 +87,14 @@ def pingWebsite(target_url, count=4):
 
 
 def stateCallback(itemRequested=""):
-    if "exit" in GetTailwindStatus():
-        Use_json({"ExitNode": True})
+    status_line = GetTailwindStatus()
+    if status_line:
+        if "exit" in status_line:
+            Use_json({"ExitNode": True})
+        else:
+            Use_json({"ExitNode": False})
+    else:
+        Use_json({"ExitNode": False})
     match itemRequested:
         case "onOff":
             return pingWebsite("100.100.100.100", count=2)
@@ -162,7 +168,7 @@ def executeTailscaleSetToggle(ItemToBeSet: str):
                 f"Error: Unknown setting '{ItemToBeSet}'. Please use 'exitNode', 'ssh', or 'acceptRoutes'.")
 
 
-def setExitNode(NodeName: str):
+def setExitNode(NodeName: str= "off"):
 
     if stateCallback('exitNode'):
         runCommand("tailscale set --advertise-exit-node=false")

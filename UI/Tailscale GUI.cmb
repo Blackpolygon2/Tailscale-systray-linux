@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='UTF-8' standalone='no'?>
+<!DOCTYPE cambalache-project SYSTEM "cambalache-project.dtd">
+<!-- Created with Cambalache 0.96.1 -->
+<cambalache-project version="0.96.0" target_tk="gtk-4.0">
+  <ui filename="tailscale gui.ui" sha256="b1be250a022f4e78d298e3463079c8d74cd8d3584883b53609e8916fe386e901"/>
+</cambalache-project>
