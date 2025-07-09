@@ -1,24 +1,25 @@
-import pystray,threading, time
+import os
+os.environ['PYSTRAY_BACKEND'] = 'appindicator'
+import pystray
+import threading
+import time
+import sys
 from PIL import Image, ImageDraw
-from TailscaleCommands import setExitNode,GetTailwindStatus,Use_json,stateCallback,toggleTailscaleOnOff,executeTailscaleSetToggle 
-
-
-
-
+from TailscaleCommands import setExitNode, GetTailwindStatus, Use_json, stateCallback, toggleTailscaleOnOff, executeTailscaleSetToggle
+from ui import GtkGUI
 
 
 class systemtray:
     """A class to manage the Tailscale system tray icon and its logic."""
+
     def __init__(self):
-        # Initialize state by fetching it from your helper functions
+
         self.is_connected = stateCallback("onOff")
         self.all_exit_nodes = list(Use_json()["ExitNodes"].keys())
         self.selected_exit_node = Use_json()["UsedExitNode"]
-        
-        # An event to signal the main thread when the app should shut down
+
         self.shutdown_event = threading.Event()
 
-        # Create the pystray.Icon object
         image = self._create_image()
         self.icon = pystray.Icon(
             "tray_icon",
@@ -29,19 +30,25 @@ class systemtray:
 
     def run(self):
         """Runs the icon in the current thread. This is a blocking call."""
-        self.icon.run() # Fixed: Added parentheses to call the method
+        self.icon.run()
 
     def run_in_thread(self):
         """Runs the icon in a separate thread so the main program doesn't block."""
-        # Fixed: Pass the method itself, not the result of calling it
+
         tray_thread = threading.Thread(target=self.icon.run)
+
         tray_thread.daemon = True
         tray_thread.start()
+
+        self.GTKUI = GtkGUI(application_id="com.example.TailscaleGUI")
+        tray_threadGTK = threading.Thread(target=self.GTKUI.run(sys.argv))
+        tray_threadGTK.daemon = True
+        tray_threadGTK.start()
 
     def _toggle_connect(self, icon, item):
         """Handles the 'Connect' menu item click."""
         toggleTailscaleOnOff()
-        # Improved: Re-check the state to ensure UI is accurate
+
         self.is_connected = stateCallback("onOff")
         print(f"Connect toggled. New status: {self.is_connected}")
         icon.update_menu()
@@ -49,20 +56,20 @@ class systemtray:
     def _select_exit_node(self, icon, item):
         """Handles selecting an exit node from the submenu."""
         self.selected_exit_node = item.text
-        
+
         if self.selected_exit_node == 'None':
             setExitNode("off")
         else:
             setExitNode(self.selected_exit_node)
-        
-        Use_json({"UsedExitNode": self.selected_exit_node}) # Persist the choice
+
+        Use_json({"UsedExitNode": self.selected_exit_node})
         print(f"Selected exit node: {self.selected_exit_node}")
         icon.update_menu()
 
     def _on_quit(self, icon, item):
         """Handles the 'Quit' menu item click."""
         print("Quit clicked, stopping icon...")
-        self.shutdown_event.set() # Signal main thread to exit
+        self.shutdown_event.set()
         self.icon.stop()
 
     def _create_exit_node_submenu(self):
@@ -82,14 +89,14 @@ class systemtray:
             )
             menu_items.append(item)
         return menu_items
+
     def update(self, icon):
         icon.update_menu()
-        
-        
+
     def _create_menu(self):
         """Builds the entire dynamic menu."""
         if GetTailwindStatus():
-            
+
             status_line = GetTailwindStatus()
         else:
             status_line = "not connected"
@@ -98,12 +105,20 @@ class systemtray:
 
         exit_node_items = self._create_exit_node_submenu()
         return pystray.Menu(
+            pystray.MenuItem(
+                'Show Message',    
+                self.GTKUI.show_window(),    
+                default=True       
+            ),
             pystray.MenuItem(f"My IP: {ip_address}", None, enabled=False),
-            pystray.MenuItem(f"Device Name: {device_name}", None, enabled=False),
+            pystray.MenuItem(
+                f"Device Name: {device_name}", None, enabled=False),
             pystray.Menu.SEPARATOR,
-            pystray.MenuItem('Connect', self._toggle_connect, checked=lambda item: self.is_connected, radio=True),
+            pystray.MenuItem('Connect', self._toggle_connect,
+                             checked=lambda item: self.is_connected, radio=True),
             pystray.Menu.SEPARATOR,
-            pystray.MenuItem('Exit nodes', pystray.Menu(*exit_node_items),enabled=stateCallback("onOff")),
+            pystray.MenuItem('Exit nodes', pystray.Menu(
+                *exit_node_items), enabled=stateCallback("onOff")),
             pystray.Menu.SEPARATOR,
             pystray.MenuItem('Refresh', self.update,),
             pystray.Menu.SEPARATOR,
@@ -114,14 +129,13 @@ class systemtray:
         try:
             image = Image.open("logo.png")
         except FileNotFoundError:
-            # Fallback: Create a simple image
+
             image = Image.new('RGB', (64, 64), color='blue')
             draw = ImageDraw.Draw(image)
             draw.text((10, 10), "TS", fill='white')
         return image
-    
-    
-#test =systemtray()
-#print(test.icon)
-#test.run()
 
+
+# test =systemtray()
+# print(test.icon)
+# test.run()

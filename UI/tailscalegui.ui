@@ -37,10 +37,11 @@
                   <object class="GtkBox">
                     <property name="css-name">list</property>
                     <child>
-                      <object class="AdwSwitchRow" id="ConnectionSwitch">
+                      <object class="AdwSwitchRow" id="onOffSwitch">
                         <property name="active">True</property>
                         <property name="height-request">50</property>
                         <property name="hexpand">True</property>
+                        <property name="name">onOff</property>
                         <property name="subtitle">Connection status</property>
                         <property name="title">User email</property>
                         <property name="width-request">300</property>
@@ -75,6 +76,7 @@
                         <property name="active">True</property>
                         <property name="height-request">50</property>
                         <property name="hexpand">True</property>
+                        <property name="name">exitNode</property>
                         <property name="title">Advertise As Exit Node</property>
                         <property name="width-request">300</property>
                         <style>
@@ -87,6 +89,7 @@
                         <property name="active">True</property>
                         <property name="height-request">50</property>
                         <property name="hexpand">True</property>
+                        <property name="name">acceptRoutes</property>
                         <property name="title">Accept Routes</property>
                         <property name="width-request">300</property>
                         <style>

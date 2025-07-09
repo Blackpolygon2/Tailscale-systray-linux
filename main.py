@@ -1,7 +1,14 @@
 from TailscaleCommands import executeComand,Use_json,stateCallback,setExitNode
 import os, json, subprocess,time
-from systray import systemtray
 
+import gi
+try:
+    gi.require_version('Gtk', '4.0')
+    gi.require_version('Adw', '1')
+except ValueError as e:
+    print(e)
+    exit(1)
+from systray import systemtray
 
 user_home = os.path.expanduser("~")
 username = os.path.split(user_home)[-1]
@@ -68,21 +75,21 @@ SetSHHandRoutes()
 if __name__ == "__main__":
     
     
-    # Create an instance of your tray app
-    tray_app = systemtray()
     
-    # Run the tray icon in a separate thread
-    tray_app.run_in_thread()
+    App = systemtray()
+    
+    
+    App.run_in_thread()
     
     
     
     
     # The program will wait here until the user quits via the tray's 'Quit' button
     try:
-        tray_app.shutdown_event.wait()
+        App.shutdown_event.wait()
     except KeyboardInterrupt:
         # This allows you to stop the main program with Ctrl+C
         print("\nCtrl+C detected, shutting down...")
-        tray_app.icon.stop()
+        App.icon.stop()
 
     

@@ -2,6 +2,6 @@
 <!DOCTYPE cambalache-project SYSTEM "cambalache-project.dtd">
 <!-- Created with Cambalache 0.96.1 -->
 <cambalache-project version="0.96.0" target_tk="gtk-4.0">
-  <ui filename="tailscalegui.ui" sha256="f2a37c7f73b95b9e7f6f7449fd385a6027711353e978ce8608a8047f943b8485"/>
+  <ui filename="tailscalegui.ui" sha256="6945a172884412ec2b19b14c8cdd677f5a7e400f800aa1d7a40a27e2fda799f4"/>
   <ui template-class="ExampleWindow" filename="../../../py-gtk/src/libadwaita-widgets/alert-dialog/ui/MainWindow.ui" sha256="8be78e6676932c5c3b2d7dca4884adc1fa91359969505d1a051f2cd222f5f2ad"/>
 </cambalache-project>

@@ -7,7 +7,7 @@ gi.require_version('Adw', '1')
 gi.require_version('WebKit', '6.0')
 from gi.repository import Gtk, Adw, WebKit,GdkPixbuf
 
-class MyApp(Adw.Application):
+class GtkGUI(Adw.Application):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         style_manager = Adw.StyleManager.get_default()
@@ -39,10 +39,16 @@ class MyApp(Adw.Application):
         self.AcceptRoutesSwitch.set_active(TS.stateCallback("AcceptRoutes"))
         self.AcceptRoutesSwitch.connect("notify::active", self.handle_switches)
         
-    
+    def refresh_switches(self):
+        self.AcceptRoutesSwitch.set_active(TS.stateCallback("AcceptRoutes"))
+        self.AdvertiseAsExitNodeSwitch.set_active(TS.stateCallback("exitNode"))
+        self.SSHswitch.set_active(TS.stateCallback("ssh"))
+        
+        
     def handle_switches(self, widget, state):
-           TS.executeTailscaleSetToggle(widget.get_name()) 
-           #self.refresh_app()
+           TS.executeTailscaleSetToggle(widget.get_name())
+           self.webview.load_uri("http://100.100.100.100/")
+           
             
     
     def on_activate(self, app):
@@ -52,7 +58,7 @@ class MyApp(Adw.Application):
 
         #declare objects
         self.webview = builder.get_object("TailscaleWebview")
-        self.ConnectionSwitch = builder.get_object("ConnectionSwitch")
+        self.ConnectionSwitch = builder.get_object("onOffSwitch")
         self.SSHswitch = builder.get_object("SSHswitch")
         self.AdvertiseAsExitNodeSwitch = builder.get_object("AdvertiseAsExitNodeSwitch")
         self.AcceptRoutesSwitch = builder.get_object("AcceptRoutesSwitch")
@@ -71,14 +77,16 @@ class MyApp(Adw.Application):
             self.ExitNodesList.append(T_exitnode)
         
         
-        # initialize objects
+        
         self.refresh_app()
         
         self.window = builder.get_object("mainWindow")
         self.window.set_application(self)  
         self.window.present()
 
-    
+    def show_window(self):
+        self.window.present()
+        
     def on_exit_node_clicked(self,widget):
         
         self.selected_exit_node = widget.get_title()
@@ -92,6 +100,6 @@ class MyApp(Adw.Application):
         print(f"Selected exit node: {self.selected_exit_node}")
         self.refresh_app()
 
-app = MyApp(application_id="com.example.TailscaleGUI")
+app = GtkGUI(application_id="com.example.TailscaleGUI")
 app.run(sys.argv)
 
