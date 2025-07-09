@@ -1,103 +1,97 @@
-# -*- coding: utf-8 -*-
-"""Python - PyGObject - GTK."""
-
+#adwactionmrow
+import TailscaleCommands as TS #cause this shit is so. lemme stop myself 
+import sys
 import gi
+gi.require_version('Gtk', '4.0')
+gi.require_version('Adw', '1')
+gi.require_version('WebKit', '6.0')
+from gi.repository import Gtk, Adw, WebKit,GdkPixbuf
 
-gi.require_version(namespace='Gtk', version='4.0')
-gi.require_version(namespace='Adw', version='1')
-
-from gi.repository import Adw, Gio, Gtk
-
-Adw.init()
-
-ITEMS = ['Item 01', 'Item 02', 'Item 03', 'Item 04', 'Item 05']
-
-
-class ExampleWindow(Adw.ApplicationWindow):
+class MyApp(Adw.Application):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.set_title(title='Python - PyGObject - GTK')
-        self.set_default_size(width=683, height=384)
-        self.set_size_request(width=683, height=384)
-
-        adw_toolbar_view = Adw.ToolbarView.new()
-        self.set_content(adw_toolbar_view)
-
-        adw_header_bar = Adw.HeaderBar.new()
-        adw_toolbar_view.add_top_bar(widget=adw_header_bar)
-
-        vbox = Gtk.Box.new(orientation=Gtk.Orientation.VERTICAL, spacing=12)
-        vbox.set_margin_top(margin=12)
-        vbox.set_margin_end(margin=12)
-        vbox.set_margin_bottom(margin=12)
-        vbox.set_margin_start(margin=12)
-        adw_toolbar_view.set_content(content=vbox)
-
-        self.listbox = Gtk.ListBox.new()
-        self.listbox.set_selection_mode(mode=Gtk.SelectionMode.NONE)
-        self.listbox.add_css_class(css_class='boxed-list')
-        vbox.append(child=self.listbox)
-
-        for item in ITEMS:
-            icon = Gtk.Image.new_from_icon_name(
-                icon_name='accessories-text-editor-symbolic',
-            )
-
-            switch = Gtk.Switch.new()
-            switch.set_valign(align=Gtk.Align.CENTER)
-            switch.connect('notify::active', self.on_switch_button_clicked)
-
-            adw_action_row = Adw.ActionRow.new()
-            adw_action_row.set_title(title=item)
-            adw_action_row.set_subtitle(subtitle='Adw.ActionRow')
-            adw_action_row.add_prefix(widget=icon)
-            adw_action_row.add_suffix(widget=switch)
-            self.listbox.append(child=adw_action_row)
-
-    def on_switch_button_clicked(self, switch, GParamBoolean):
-        if switch.get_active():
-            print('Button checked')
+        style_manager = Adw.StyleManager.get_default()
+        style_manager.set_color_scheme(Adw.ColorScheme.FORCE_DARK)
+        self.connect('activate', self.on_activate)
+    WebKit.WebView()
+    
+    
+    def refresh_app(self):
+        if self.webview:
+            self.webview.load_uri("http://100.100.100.100/")    
+        if TS.stateCallback("onOff"):
+            self.ConnectionSwitch.set_subtitle("connected")
         else:
-            print('Button unchecked')
+            self.ConnectionSwitch.set_subtitle("not connected")
+        
+        self.ConnectionSwitch.set_active(TS.stateCallback("onOff"))
+        self.ConnectionSwitch.connect("notify::active", self.handle_switches)
+        self.ConnectionSwitch.set_title(TS.GetTailwindStatus().split()[2])
+        
+        self.ExitNodesRow.set_subtitle(TS.Use_json()["UsedExitNode"])
+        
+        self.SSHswitch.set_active(TS.stateCallback("ssh"))
+        self.SSHswitch.connect("notify::active", self.handle_switches)
+        
+        self.AdvertiseAsExitNodeSwitch.set_active(TS.stateCallback("exitNode"))
+        self.AdvertiseAsExitNodeSwitch.connect("notify::active", self.handle_switches)
+        
+        self.AcceptRoutesSwitch.set_active(TS.stateCallback("AcceptRoutes"))
+        self.AcceptRoutesSwitch.connect("notify::active", self.handle_switches)
+        
+    
+    def handle_switches(self, widget, state):
+           TS.executeTailscaleSetToggle(widget.get_name()) 
+           #self.refresh_app()
+            
+    
+    def on_activate(self, app):
+        
+        builder = Gtk.Builder()
+        builder.add_from_file("UI/tailscalegui.ui")
 
-
-class ExampleApplication(Adw.Application):
-    def __init__(self):
-        super().__init__(
-            application_id='br.com.justcode.Gtk',
-            flags=Gio.ApplicationFlags.DEFAULT_FLAGS,
-        )
-
-        self.create_action('quit', self.exit_app, ['<primary>q'])
-
-    def do_activate(self):
-        win = self.props.active_window
-        if not win:
-            win = ExampleWindow(application=self)
-        win.present()
-
-    def do_startup(self):
-        Gtk.Application.do_startup(self)
-
-    def do_shutdown(self):
-        Gtk.Application.do_shutdown(self)
-
-    def exit_app(self, action, param):
-        self.quit()
-
-    def create_action(self, name, callback, shortcuts=None):
-        action = Gio.SimpleAction.new(name=name, parameter_type=None)
-        action.connect('activate', callback)
-        self.add_action(action=action)
-        if shortcuts:
-            self.set_accels_for_action(
-                detailed_action_name=f'app.{name}',
-                accels=shortcuts,
+        #declare objects
+        self.webview = builder.get_object("TailscaleWebview")
+        self.ConnectionSwitch = builder.get_object("ConnectionSwitch")
+        self.SSHswitch = builder.get_object("SSHswitch")
+        self.AdvertiseAsExitNodeSwitch = builder.get_object("AdvertiseAsExitNodeSwitch")
+        self.AcceptRoutesSwitch = builder.get_object("AcceptRoutesSwitch")
+        self.ExitNodesRow = builder.get_object("ExitNodesRow")
+        self.ExitNodesList = builder.get_object("ExitNodesList")
+        self.ShareFilesButton = builder.get_object("ShareFilesButton")
+        self.ReciveFilesButton = builder.get_object("ReciveFilesButton")
+        self.LogOutButton = builder.get_object("LogOutButton")
+        
+        for exitnode in list(TS.Use_json()["ExitNodes"].keys()):
+            T_exitnode = Adw.ActionRow(
+            title=exitnode,
+            activatable=True
             )
+            T_exitnode.connect("activated", self.on_exit_node_clicked)
+            self.ExitNodesList.append(T_exitnode)
+        
+        
+        # initialize objects
+        self.refresh_app()
+        
+        self.window = builder.get_object("mainWindow")
+        self.window.set_application(self)  
+        self.window.present()
 
+    
+    def on_exit_node_clicked(self,widget):
+        
+        self.selected_exit_node = widget.get_title()
+        
+        if self.selected_exit_node == 'None':
+            TS.setExitNode("off")
+        else:
+            TS.setExitNode(self.selected_exit_node)
+        
+        TS.Use_json({"UsedExitNode": self.selected_exit_node}) # Persist the choice
+        print(f"Selected exit node: {self.selected_exit_node}")
+        self.refresh_app()
 
-if __name__ == '__main__':
-    import sys
+app = MyApp(application_id="com.example.TailscaleGUI")
+app.run(sys.argv)
 
-    app = ExampleApplication()
-    app.run(sys.argv)

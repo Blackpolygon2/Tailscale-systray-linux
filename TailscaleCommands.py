@@ -3,6 +3,7 @@ import os
 import platform
 import json
 import shlex
+from typing import Literal
 
 
 def runCommand(command): return executeComand(command)
@@ -85,8 +86,8 @@ def pingWebsite(target_url, count=4):
 
 # make something to ensure that the state of tailscale with all the infor needed for the callbacks
 
-
-def stateCallback(itemRequested=""):
+stateCallbackOptions = Literal["onOff","exitNode", "ssh", "AcceptRoutes", "t"]
+def stateCallback(itemRequested: stateCallbackOptions=""):
     status_line = GetTailwindStatus()
     if status_line:
         if "exit" in status_line:
@@ -95,6 +96,7 @@ def stateCallback(itemRequested=""):
             Use_json({"ExitNode": False})
     else:
         Use_json({"ExitNode": False})
+        
     match itemRequested:
         case "onOff":
             return pingWebsite("100.100.100.100", count=2)
@@ -162,7 +164,8 @@ def executeTailscaleSetToggle(ItemToBeSet: str):
                 print(" Accepting routes is OFF, turning it ON...")
                 executeComand("tailscale set --accept-routes")
                 Use_json({"AcceptRoutes": True})
-
+        case "onOff":
+            toggleTailscaleOnOff()
         case _:
             print(
                 f"Error: Unknown setting '{ItemToBeSet}'. Please use 'exitNode', 'ssh', or 'acceptRoutes'.")
@@ -192,4 +195,4 @@ def setExitNode(NodeName: str= "off"):
 # print(Use_json()["SSH"])
 # Use_json({"SSH":True})
 #setExitNode('off')
-
+#print(GetTailwindStatus())
