@@ -1,14 +1,8 @@
 from TailscaleCommands import executeComand,Use_json,stateCallback,setExitNode
-import os, json, subprocess,time
-
-import gi
-try:
-    gi.require_version('Gtk', '4.0')
-    gi.require_version('Adw', '1')
-except ValueError as e:
-    print(e)
-    exit(1)
-from systray import systemtray
+import os, json, subprocess,time,sys
+from systray import SystemTray
+from ui import GtkGUI
+from PyQt5.QtWidgets import QApplication
 
 user_home = os.path.expanduser("~")
 username = os.path.split(user_home)[-1]
@@ -73,23 +67,11 @@ indexExitNodes()
 SetSHHandRoutes()
 
 if __name__ == "__main__":
-    
-    
-    
-    App = systemtray()
-    
-    
-    App.run_in_thread()
-    
-    
-    
-    
-    # The program will wait here until the user quits via the tray's 'Quit' button
-    try:
-        App.shutdown_event.wait()
-    except KeyboardInterrupt:
-        # This allows you to stop the main program with Ctrl+C
-        print("\nCtrl+C detected, shutting down...")
-        App.icon.stop()
+    qtapp = QApplication(sys.argv)
+    tray = SystemTray(qtapp)
+    app = GtkGUI(application_id="com.example.TailscaleGUI")
+    app.run(sys.argv)
+    tray.set_input_function(app.show_window)
+    sys.exit(qtapp.exec_())
 
     

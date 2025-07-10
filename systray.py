@@ -1,141 +1,165 @@
 import os
-os.environ['PYSTRAY_BACKEND'] = 'appindicator'
-import pystray
-import threading
-import time
 import sys
+import threading
 from PIL import Image, ImageDraw
+from PyQt5.QtWidgets import QSystemTrayIcon, QMenu, QApplication, QAction
+from PyQt5.QtGui import QIcon, QPixmap
 from TailscaleCommands import setExitNode, GetTailwindStatus, Use_json, stateCallback, toggleTailscaleOnOff, executeTailscaleSetToggle
-from ui import GtkGUI
 
 
-class systemtray:
-    """A class to manage the Tailscale system tray icon and its logic."""
+class SystemTray:
+    """A class to manage the Tailscale system tray icon and its logic using PyQt5."""
 
-    def __init__(self):
-
+    def __init__(self, app):
+        self.app = app  # QApplication instance
         self.is_connected = stateCallback("onOff")
         self.all_exit_nodes = list(Use_json()["ExitNodes"].keys())
         self.selected_exit_node = Use_json()["UsedExitNode"]
-
         self.shutdown_event = threading.Event()
 
-        image = self._create_image()
-        self.icon = pystray.Icon(
-            "tray_icon",
-            image,
-            "Tailscale Tray",
-            menu=self._create_menu()
-        )
+        # Create system tray icon
+        self.tray_icon = QSystemTrayIcon(self._create_image(), self.app)
+        self.tray_icon.setToolTip("Tailscale Tray")
+        self.tray_icon.activated.connect(self._on_tray_activated)
 
-    def run(self):
-        """Runs the icon in the current thread. This is a blocking call."""
-        self.icon.run()
+       
 
-    def run_in_thread(self):
-        """Runs the icon in a separate thread so the main program doesn't block."""
+        # Create and set initial menu
+        self._update_menu()
+        self.tray_icon.setContextMenu(self._create_menu())
+        self.tray_icon.show()
+    
+    def set_input_function(self, func):
+        self.function = func 
+           
+    def _on_tray_activated(self, reason):
+        if reason == QSystemTrayIcon.DoubleClick:
+            self.function()
+            
+               
+       
+        
 
-        tray_thread = threading.Thread(target=self.icon.run)
-
-        tray_thread.daemon = True
-        tray_thread.start()
-
-        self.GTKUI = GtkGUI(application_id="com.example.TailscaleGUI")
-        tray_threadGTK = threading.Thread(target=self.GTKUI.run(sys.argv))
-        tray_threadGTK.daemon = True
-        tray_threadGTK.start()
-
-    def _toggle_connect(self, icon, item):
+    def _toggle_connect(self):
         """Handles the 'Connect' menu item click."""
         toggleTailscaleOnOff()
-
         self.is_connected = stateCallback("onOff")
         print(f"Connect toggled. New status: {self.is_connected}")
-        icon.update_menu()
+        self._update_menu()
 
-    def _select_exit_node(self, icon, item):
+    def _select_exit_node(self, node_name):
         """Handles selecting an exit node from the submenu."""
-        self.selected_exit_node = item.text
-
+        self.selected_exit_node = node_name
         if self.selected_exit_node == 'None':
             setExitNode("off")
         else:
             setExitNode(self.selected_exit_node)
-
         Use_json({"UsedExitNode": self.selected_exit_node})
         print(f"Selected exit node: {self.selected_exit_node}")
-        icon.update_menu()
+        self._update_menu()
 
-    def _on_quit(self, icon, item):
+    def _on_quit(self):
         """Handles the 'Quit' menu item click."""
         print("Quit clicked, stopping icon...")
         self.shutdown_event.set()
-        self.icon.stop()
+        self.tray_icon.hide()
+        self.app.quit()
 
     def _create_exit_node_submenu(self):
         """Builds the dynamic exit node submenu."""
+        submenu = QMenu("Exit nodes")
         ordered_nodes = [self.selected_exit_node]
         for node in self.all_exit_nodes:
             if node != self.selected_exit_node:
                 ordered_nodes.append(node)
 
-        menu_items = []
         for node_name in ordered_nodes:
-            item = pystray.MenuItem(
-                node_name,
-                self._select_exit_node,
-                checked=lambda item, name=node_name: self.selected_exit_node == name,
-                radio=True
-            )
-            menu_items.append(item)
-        return menu_items
+            action = QAction(node_name, submenu)
+            action.setCheckable(True)
+            action.setChecked(self.selected_exit_node == node_name)
+            # Create a closure to capture node_name
+            action.triggered.connect(lambda checked, name=node_name: self._select_exit_node(name))
+            submenu.addAction(action)
+        submenu.setEnabled(stateCallback("onOff"))
+        return submenu
 
-    def update(self, icon):
-        icon.update_menu()
+    def _update_menu(self):
+        """Updates the tray menu."""
+        self.tray_icon.setContextMenu(self._create_menu())
 
     def _create_menu(self):
         """Builds the entire dynamic menu."""
-        if GetTailwindStatus():
+        menu = QMenu()
 
-            status_line = GetTailwindStatus()
-        else:
-            status_line = "not connected"
+        # Get status information
+        status_line = GetTailwindStatus() or "not connected"
         ip_address = status_line.split()[0].strip()
         device_name = status_line.split()[1].strip()
 
-        exit_node_items = self._create_exit_node_submenu()
-        return pystray.Menu(
-            pystray.MenuItem(
-                'Show Message',    
-                self.GTKUI.show_window(),    
-                default=True       
-            ),
-            pystray.MenuItem(f"My IP: {ip_address}", None, enabled=False),
-            pystray.MenuItem(
-                f"Device Name: {device_name}", None, enabled=False),
-            pystray.Menu.SEPARATOR,
-            pystray.MenuItem('Connect', self._toggle_connect,
-                             checked=lambda item: self.is_connected, radio=True),
-            pystray.Menu.SEPARATOR,
-            pystray.MenuItem('Exit nodes', pystray.Menu(
-                *exit_node_items), enabled=stateCallback("onOff")),
-            pystray.Menu.SEPARATOR,
-            pystray.MenuItem('Refresh', self.update,),
-            pystray.Menu.SEPARATOR,
-            pystray.MenuItem('Quit', self._on_quit,)
-        )
+        # IP and Device Name (disabled)
+        ip_action = QAction(f"My IP: {ip_address}", menu)
+        ip_action.setEnabled(False)
+        menu.addAction(ip_action)
+
+        device_action = QAction(f"Device Name: {device_name}", menu)
+        device_action.setEnabled(False)
+        menu.addAction(device_action)
+
+        # Separator
+        menu.addSeparator()
+
+        # Connect toggle
+        connect_action = QAction("Connect", menu)
+        connect_action.setCheckable(True)
+        connect_action.setChecked(self.is_connected)
+        connect_action.triggered.connect(self._toggle_connect)
+        menu.addAction(connect_action)
+
+        # Separator
+        menu.addSeparator()
+
+        # Exit nodes submenu
+        menu.addMenu(self._create_exit_node_submenu())
+
+        # Separator
+        menu.addSeparator()
+
+        # Refresh action
+        refresh_action = QAction("Refresh", menu)
+        refresh_action.triggered.connect(self._update_menu)
+        menu.addAction(refresh_action)
+
+        # Separator
+        menu.addSeparator()
+
+        # Quit action
+        quit_action = QAction("Quit", menu)
+        quit_action.triggered.connect(self._on_quit)
+        menu.addAction(quit_action)
+        print ('menu')
+        return menu
 
     def _create_image(self):
+        """Creates the tray icon image."""
         try:
             image = Image.open("logo.png")
         except FileNotFoundError:
-
             image = Image.new('RGB', (64, 64), color='blue')
             draw = ImageDraw.Draw(image)
             draw.text((10, 10), "TS", fill='white')
-        return image
+        
+        # Convert PIL Image to QPixmap
+        image.save("temp_icon.png")  # Save temporarily to load into QPixmap
+        pixmap = QPixmap("temp_icon.png")
+        os.remove("temp_icon.png")  # Clean up
+        return QIcon(pixmap)
 
-
-# test =systemtray()
-# print(test.icon)
-# test.run()
+"""def main():
+    app = QApplication(sys.argv)
+    tray = SystemTray(app)
+    tray.set_input_function(printsmt)
+    sys.exit(app.exec_())
+    
+    
+if __name__ == "__main__":
+    main()"""

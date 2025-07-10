@@ -28,15 +28,17 @@ class SystemTray:
         self._update_menu()
         self.tray_icon.setContextMenu(self._create_menu())
         self.tray_icon.show()
-        
-        
-        
-        
-
+    
+    def set_input_function(self, func):
+        self.function = func 
+           
     def _on_tray_activated(self, reason):
-        """Handle tray icon activation (e.g., double-click to show GUI)."""
-        """if reason == QSystemTrayIcon.DoubleClick:
-            self.GTKUI.show_window()"""
+        if reason == QSystemTrayIcon.DoubleClick:
+            self.function()
+            
+               
+       
+        
 
     def _toggle_connect(self):
         """Handles the 'Connect' menu item click."""
@@ -93,11 +95,6 @@ class SystemTray:
         status_line = GetTailwindStatus() or "not connected"
         ip_address = status_line.split()[0].strip()
         device_name = status_line.split()[1].strip()
-
-        # Show Message (default action)
-        """show_action = QAction("Show Message", menu)
-        show_action.triggered.connect(self.GTKUI.show_window)
-        menu.addAction(show_action)"""
 
         # IP and Device Name (disabled)
         ip_action = QAction(f"My IP: {ip_address}", menu)
@@ -160,7 +157,11 @@ class SystemTray:
 def main():
     app = QApplication(sys.argv)
     tray = SystemTray(app)
+    tray.set_input_function(printsmt)
     sys.exit(app.exec_())
-
+    
+    
+def printsmt():
+    print("hello")
 if __name__ == "__main__":
     main()

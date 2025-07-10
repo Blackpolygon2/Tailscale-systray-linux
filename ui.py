@@ -50,7 +50,11 @@ class GtkGUI(Adw.Application):
            self.webview.load_uri("http://100.100.100.100/")
            
             
-    
+    def on_close_request(self, window):
+        
+        window.hide()
+        
+        return True
     def on_activate(self, app):
         
         builder = Gtk.Builder()
@@ -82,6 +86,7 @@ class GtkGUI(Adw.Application):
         
         self.window = builder.get_object("mainWindow")
         self.window.set_application(self)  
+        self.window.connect("close-request", self.on_close_request)
         self.window.present()
 
     def show_window(self):
@@ -100,6 +105,6 @@ class GtkGUI(Adw.Application):
         print(f"Selected exit node: {self.selected_exit_node}")
         self.refresh_app()
 
-app = GtkGUI(application_id="com.example.TailscaleGUI")
-app.run(sys.argv)
+    """app = GtkGUI(application_id="com.example.TailscaleGUI")
+    app.run(sys.argv)"""
 
