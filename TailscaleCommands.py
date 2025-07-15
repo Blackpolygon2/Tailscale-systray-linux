@@ -36,7 +36,7 @@ def executeComand(command, use_sudo=False):
 
         return None
 
-
+#fix this
 def Use_json(*DictItemValue: dict):
     with open('State.json', 'r') as file:
         data = json.load(file)
@@ -107,7 +107,7 @@ def stateCallback(itemRequested: stateCallbackOptions=""):
 
         case 'AcceptRoutes':
             return Use_json()["AcceptRoutes"]
-        case "t":
+        case "test":
             pass
         case _:
             print('pls correct input or no input used but stateCallback was called  ')
@@ -177,13 +177,18 @@ def setExitNode(NodeName: str= "off"):
         runCommand("tailscale set --advertise-exit-node=false")
     if NodeName != "off":
         #turning on exit node
-        stateCallback("t")
+        stateCallback("test")
         all_nodes = Use_json()["ExitNodes"]
-        target_node_ip = all_nodes[NodeName]
-        runCommand(f"tailscale set --exit-node {target_node_ip}")
-        Use_json({"UsedExitNode": NodeName})
-        Use_json({"UsingExitNode": True})
-        Use_json({"ExitNode": False})
+        try:
+            target_node_ip = all_nodes[NodeName]
+            runCommand(f"tailscale set --exit-node {target_node_ip}")
+            Use_json({"UsedExitNode": NodeName})
+            Use_json({"UsingExitNode": True})
+            Use_json({"ExitNode": False})
+        except:
+            setExitNode("off")
+            print(f"Exit node not found")
+        
         
         
     else:
