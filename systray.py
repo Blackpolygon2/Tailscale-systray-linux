@@ -1,25 +1,30 @@
 import os
-import sys
 from PIL import Image, ImageDraw
 import threading
-import time
-from PyQt5.QtWidgets import QSystemTrayIcon, QMenu, QApplication, QActionGroup
-from PyQt5.QtGui import QIcon, QPixmap, QDesktopServices
-from PyQt5.QtCore import QUrl
-from TailscaleCommands import setExitNode, GetTailwindStatus, Use_json, stateCallback, toggleTailscaleOnOff
+from PyQt5.QtWidgets import *
+from PyQt5.QtGui import *
+from PyQt5.QtCore import *
+from TailscaleCommands import send_notification, executeTailscaleSetToggle, setExitNode, GetTailwindStatus, Use_json, stateCallback, toggleTailscaleOnOff
 import logging
+import webbrowser
+
 
 logging.basicConfig(
     filename='systray.log',
     level=logging.DEBUG,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
+
+
 class SystemTray:
 
     def __init__(self, app):
         self.app = app
 
         self.is_connected = stateCallback("onOff")
+        self.is_exitnode = stateCallback("exitNode")
+        self.is_ssh = stateCallback("ssh")
+        self.is_acceptroutes = stateCallback("AcceptRoutes")
         self.all_exit_nodes = list(Use_json()["ExitNodes"].keys())
         self.selected_exit_node = Use_json()["UsedExitNode"]
         self.shutdown_event = threading.Event()
@@ -35,11 +40,37 @@ class SystemTray:
     def run(self):
         self.app.exec_()
 
-    def _toggle_connect(self):
-        toggleTailscaleOnOff()
+    def _update_state(self):
         self.is_connected = stateCallback("onOff")
-        print(f"Connect toggled. New status: {self.is_connected}")
+        self.is_exitnode = stateCallback("exitNode")
+        self.is_ssh = stateCallback("ssh")
+        self.is_acceptroutes = stateCallback("AcceptRoutes")
         self._create_menu()
+
+    def _toggle_connect(self):
+        executeTailscaleSetToggle("onOff")
+
+        self._update_state
+        send_notification(f"Tailscale connection toggled {self.is_connected}")
+
+    def _toggle_ssh(self):
+        executeTailscaleSetToggle("ssh")
+
+        self._update_state
+        send_notification(f"Tailscale SSH service toggled {self.is_ssh}")
+
+    def _toggle_accept_routes(self):
+        executeTailscaleSetToggle("acceptRoutes")
+
+        self._update_state
+        send_notification(
+            f"Tailscale accept routes toggled {self.is_acceptroutes}")
+
+    def _toggle_adv_as_exit_node(self):
+        executeTailscaleSetToggle("exitNode")
+        
+        self._update_state
+        send_notification(f"Tailscale advertising as exit node {self.is_exitnode}")
 
     def _select_exit_node(self, node_name):
         self.selected_exit_node = node_name
@@ -48,11 +79,11 @@ class SystemTray:
         else:
             setExitNode(self.selected_exit_node)
         Use_json({"UsedExitNode": self.selected_exit_node})
-        print(f"Selected exit node: {self.selected_exit_node}")
+        logging.debug(f"Selected exit node: {self.selected_exit_node}")
         self._create_menu()
 
     def _on_quit(self):
-        print("Quit clicked, stopping icon...")
+        logging.debug("Quit clicked, stopping icon...")
         self.shutdown_event.set()
         self.tray_icon.hide()
         self.app.quit()
@@ -83,6 +114,10 @@ class SystemTray:
 
     def _create_menu(self):
         menu = QMenu()
+
+        show_panel_action = menu.addAction("Show panel")
+        show_panel_action.triggered.connect(
+            lambda: webbrowser.open("http://100.100.100.100/"))
 
         if GetTailwindStatus():
             status_line = GetTailwindStatus()
@@ -116,9 +151,21 @@ class SystemTray:
 
         menu.addSeparator()
 
-        # Refresh
-        refresh_action = menu.addAction("Refresh")
-        refresh_action.triggered.connect(self._create_menu)
+        ssh_action = menu.addAction("SSH")
+        ssh_action.setCheckable(True)
+        ssh_action.setChecked(self.is_ssh)
+        ssh_action.triggered.connect(self._toggle_ssh)
+
+        advertise_exit_node_action = menu.addAction("Advertise As Exit Node")
+        advertise_exit_node_action.setCheckable(True)
+        advertise_exit_node_action.setChecked(self.is_exitnode)
+        advertise_exit_node_action.triggered.connect(
+            self._toggle_adv_as_exit_node)
+
+        accept_routes_action = menu.addAction("Accept Routes")
+        accept_routes_action.setCheckable(True)
+        accept_routes_action.setChecked(self.is_acceptroutes)
+        accept_routes_action.triggered.connect(self._toggle_accept_routes)
 
         menu.addSeparator()
 
@@ -141,5 +188,3 @@ class SystemTray:
         pixmap = QPixmap("temp_icon.png")
         os.remove("temp_icon.png")
         return QIcon(pixmap)
-
-    

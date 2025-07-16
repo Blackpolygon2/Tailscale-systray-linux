@@ -1,9 +1,19 @@
 import subprocess
-import os
 import platform
 import json
 import shlex
 from typing import Literal
+from notifypy import Notify
+import logging
+
+
+
+logging.basicConfig(
+    filename='functions.log',
+    level=logging.DEBUG,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
 
 
 def runCommand(command): return executeComand(command)
@@ -17,38 +27,36 @@ def executeComand(command, use_sudo=False):
 
         result = subprocess.run(shlex.split(
             command), capture_output=True, text=True, check=True)
-        print(f" Command '{command}' successful!")
+        logging.debug(f" Command '{command}' successful!")
         return result.stdout
 
     except FileNotFoundError:
-        print(
+        logging.error(
             f" Error: Command not found. Is '{shlex.split(command)[0]}' installed and in your PATH?")
         return None
 
     except subprocess.CalledProcessError as e:
-        print(f" Command '{command}' failed with return code {e.returncode}.")
+        logging.error(f" Command '{command}' failed with return code {e.returncode}.")
         if e.stderr:
-            print(f"Error details:\n{e.stderr}")
+            logging.error(f"Error details:\n{e.stderr}")
 
         if not use_sudo:
-            print("Retrying with pkexec (sudo)...")
+            logging.error("Retrying with pkexec (sudo)...")
             return executeComand(command, use_sudo=True)
 
         return None
 
-#fix this
+
 def Use_json(*DictItemValue: dict):
     with open('State.json', 'r') as file:
         data = json.load(file)
 
     for DictItemValue in DictItemValue:
-        # i am so sorry i dont know any other way (;_;)
         data[list(DictItemValue.keys())[0]] = list(DictItemValue.values())[0]
         
         with open('State.json', 'w') as file:
             json.dump(data, file, indent=4)
 
-    # print(DictItemValue)
 
     return (data)
 
@@ -71,20 +79,17 @@ def pingWebsite(target_url, count=4):
     try:
         if platform.system() == "Windows":
             command = ["ping", "-n", str(count), target_url]
-        else:  # Linux/macOS
+        else:  
             command = ["ping", "-c", str(count), target_url]
 
         result = subprocess.run(
             command, capture_output=True, text=True, check=True)
-        # print(f"Ping successful for {target_url}:\n{result.stdout}")
         return True
     except subprocess.CalledProcessError as e:
-        # print(f"Ping failed for {target_url}:\n{e.stderr}")
         return False
     except FileNotFoundError:
-        print("Ping command not found. Ensure it's in your system's PATH.")
+        logging.error("Ping command not found. Ensure it's in your system's PATH.")
 
-# make something to ensure that the state of tailscale with all the infor needed for the callbacks
 
 stateCallbackOptions = Literal["onOff","exitNode", "ssh", "AcceptRoutes", "t"]
 def stateCallback(itemRequested: stateCallbackOptions=""):
@@ -110,11 +115,10 @@ def stateCallback(itemRequested: stateCallbackOptions=""):
         case "test":
             pass
         case _:
-            print('pls correct input or no input used but stateCallback was called  ')
+            logging.debug('pls correct input or no input used but stateCallback was called  ')
     pass
 
-# all of these functions must have call backs to ensure that a reapeat comand is not made
-# print(runCommand("tailscale up"))
+
 
 
 def toggleTailscaleOnOff():
@@ -125,20 +129,17 @@ def toggleTailscaleOnOff():
 
 
 def executeTailscaleSetToggle(ItemToBeSet: str):
-    """
-    Toggles Tailscale settings like SSH, advertising an exit node, or accepting routes.
-    It reads the current state and performs the opposite action.
-    """
+    
     match ItemToBeSet:
         case "exitNode":
             is_exit_node_on = Use_json()['ExitNode']
             if is_exit_node_on:
-                print(" Exit Node advertising is ON, turning it OFF...")
+                logging.debug(" Exit Node advertising is ON, turning it OFF...")
                 executeComand("tailscale set --advertise-exit-node=false")
                 Use_json({"ExitNode": False})
             else:
                 setExitNode("off")
-                print(" Exit Node advertising is OFF, turning it ON...")
+                logging.debug(" Exit Node advertising is OFF, turning it ON...")
                 executeComand("tailscale set --advertise-exit-node")
                 
                 Use_json({"ExitNode": True})
@@ -146,28 +147,28 @@ def executeTailscaleSetToggle(ItemToBeSet: str):
         case "ssh":
             is_ssh_on = Use_json()['SSH']
             if is_ssh_on:
-                print(" SSH is ON, turning it OFF...")
+                logging.debug(" SSH is ON, turning it OFF...")
                 executeComand("tailscale set --ssh=false")
                 Use_json({"SSH": False})
             else:
-                print(" SSH is OFF, turning it ON...")
+                logging.debug(" SSH is OFF, turning it ON...")
                 executeComand("tailscale set --ssh")
                 Use_json({"SSH": True})
 
         case "acceptRoutes":
             are_routes_accepted = Use_json()['AcceptRoutes']
             if are_routes_accepted:
-                print(" Accepting routes is ON, turning it OFF...")
+                logging.debug(" Accepting routes is ON, turning it OFF...")
                 executeComand("tailscale set --accept-routes=false")
                 Use_json({"AcceptRoutes": False})
             else:
-                print(" Accepting routes is OFF, turning it ON...")
+                logging.debug(" Accepting routes is OFF, turning it ON...")
                 executeComand("tailscale set --accept-routes")
                 Use_json({"AcceptRoutes": True})
         case "onOff":
             toggleTailscaleOnOff()
         case _:
-            print(
+            logging.error(
                 f"Error: Unknown setting '{ItemToBeSet}'. Please use 'exitNode', 'ssh', or 'acceptRoutes'.")
 
 
@@ -187,7 +188,7 @@ def setExitNode(NodeName: str= "off"):
             Use_json({"ExitNode": False})
         except:
             setExitNode("off")
-            print(f"Exit node not found")
+            logging.error(f"Exit node not found")
         
         
         
@@ -196,8 +197,12 @@ def setExitNode(NodeName: str= "off"):
         Use_json({"UsedExitNode": "None"})
         Use_json({"UsingExitNode": False})
 
+def send_notification(message: str):
+    if message:        
+        notification = Notify()
+        notification.title = "Tailscale Tray"
+        notification.application_name = "Tailscale Tray"
+        notification.message = message
+        notification.icon = "logo.png"
+        notification.send()
 
-# print(Use_json()["SSH"])
-# Use_json({"SSH":True})
-#setExitNode('off')
-#print(GetTailwindStatus())
