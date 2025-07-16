@@ -1,7 +1,6 @@
 import os
 import json
 import subprocess
-import time
 import sys
 from TailscaleCommands import executeComand, Use_json, stateCallback, setExitNode
 from systray import SystemTray
