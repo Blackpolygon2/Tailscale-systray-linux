@@ -1,4 +1,4 @@
-import subprocess
+import subprocess, os
 import platform
 import json
 import shlex
@@ -7,9 +7,10 @@ from notifypy import Notify
 import logging
 
 
-
+path = os.path.expanduser("~/.TailscaleSystemTray")
+filename = os.path.join(path, 'State.json')
 logging.basicConfig(
-    filename='functions.log',
+    filename=os.path.join(path, 'functions.log'),
     level=logging.DEBUG,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
@@ -47,14 +48,14 @@ def executeComand(command, use_sudo=False):
         return None
 
 
-def Use_json(*DictItemValue: dict):
-    with open('State.json', 'r') as file:
+def get_and_set_state_json(*DictItemValue: dict):
+    with open(filename, 'r') as file:
         data = json.load(file)
 
     for DictItemValue in DictItemValue:
         data[list(DictItemValue.keys())[0]] = list(DictItemValue.values())[0]
         
-        with open('State.json', 'w') as file:
+        with open(filename, 'w') as file:
             json.dump(data, file, indent=4)
 
 
@@ -96,22 +97,22 @@ def stateCallback(itemRequested: stateCallbackOptions=""):
     status_line = GetTailwindStatus()
     if status_line:
         if "exit" in status_line:
-            Use_json({"ExitNode": True})
+            get_and_set_state_json({"ExitNode": True})
         else:
-            Use_json({"ExitNode": False})
+            get_and_set_state_json({"ExitNode": False})
     else:
-        Use_json({"ExitNode": False})
+        get_and_set_state_json({"ExitNode": False})
         
     match itemRequested:
         case "onOff":
             return pingWebsite("100.100.100.100", count=2)
         case 'exitNode':
-            return Use_json()["ExitNode"]
+            return get_and_set_state_json()["ExitNode"]
         case 'ssh':
-            return Use_json()["SSH"]
+            return get_and_set_state_json()["SSH"]
 
         case 'AcceptRoutes':
-            return Use_json()["AcceptRoutes"]
+            return get_and_set_state_json()["AcceptRoutes"]
         case "test":
             pass
         case _:
@@ -132,39 +133,39 @@ def executeTailscaleSetToggle(ItemToBeSet: str):
     
     match ItemToBeSet:
         case "exitNode":
-            is_exit_node_on = Use_json()['ExitNode']
+            is_exit_node_on = get_and_set_state_json()['ExitNode']
             if is_exit_node_on:
                 logging.debug(" Exit Node advertising is ON, turning it OFF...")
                 executeComand("tailscale set --advertise-exit-node=false")
-                Use_json({"ExitNode": False})
+                get_and_set_state_json({"ExitNode": False})
             else:
                 setExitNode("off")
                 logging.debug(" Exit Node advertising is OFF, turning it ON...")
                 executeComand("tailscale set --advertise-exit-node")
                 
-                Use_json({"ExitNode": True})
+                get_and_set_state_json({"ExitNode": True})
 
         case "ssh":
-            is_ssh_on = Use_json()['SSH']
+            is_ssh_on = get_and_set_state_json()['SSH']
             if is_ssh_on:
                 logging.debug(" SSH is ON, turning it OFF...")
                 executeComand("tailscale set --ssh=false")
-                Use_json({"SSH": False})
+                get_and_set_state_json({"SSH": False})
             else:
                 logging.debug(" SSH is OFF, turning it ON...")
                 executeComand("tailscale set --ssh")
-                Use_json({"SSH": True})
+                get_and_set_state_json({"SSH": True})
 
         case "acceptRoutes":
-            are_routes_accepted = Use_json()['AcceptRoutes']
+            are_routes_accepted = get_and_set_state_json()['AcceptRoutes']
             if are_routes_accepted:
                 logging.debug(" Accepting routes is ON, turning it OFF...")
                 executeComand("tailscale set --accept-routes=false")
-                Use_json({"AcceptRoutes": False})
+                get_and_set_state_json({"AcceptRoutes": False})
             else:
                 logging.debug(" Accepting routes is OFF, turning it ON...")
                 executeComand("tailscale set --accept-routes")
-                Use_json({"AcceptRoutes": True})
+                get_and_set_state_json({"AcceptRoutes": True})
         case "onOff":
             toggleTailscaleOnOff()
         case _:
@@ -179,13 +180,13 @@ def setExitNode(NodeName: str= "off"):
     if NodeName != "off":
         #turning on exit node
         stateCallback("test")
-        all_nodes = Use_json()["ExitNodes"]
+        all_nodes = get_and_set_state_json()["ExitNodes"]
         try:
             target_node_ip = all_nodes[NodeName]
             runCommand(f"tailscale set --exit-node {target_node_ip}")
-            Use_json({"UsedExitNode": NodeName})
-            Use_json({"UsingExitNode": True})
-            Use_json({"ExitNode": False})
+            get_and_set_state_json({"UsedExitNode": NodeName})
+            get_and_set_state_json({"UsingExitNode": True})
+            get_and_set_state_json({"ExitNode": False})
         except:
             setExitNode("off")
             logging.error(f"Exit node not found")
@@ -194,8 +195,8 @@ def setExitNode(NodeName: str= "off"):
         
     else:
         runCommand(f"tailscale set --exit-node=")
-        Use_json({"UsedExitNode": "None"})
-        Use_json({"UsingExitNode": False})
+        get_and_set_state_json({"UsedExitNode": "None"})
+        get_and_set_state_json({"UsingExitNode": False})
 
 def send_notification(message: str):
     if message:        

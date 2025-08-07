@@ -1,0 +1,4 @@
+notifypy
+PyQt5
+Pillow
+requests

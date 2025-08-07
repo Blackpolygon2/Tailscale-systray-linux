@@ -1,16 +1,17 @@
-import os
+import os, requests
 from PIL import Image, ImageDraw
 import threading
+from io import BytesIO
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
-from TailscaleCommands import send_notification, executeTailscaleSetToggle, setExitNode, GetTailwindStatus, Use_json, stateCallback, toggleTailscaleOnOff
+from TailscaleCommands import send_notification, executeTailscaleSetToggle, setExitNode, GetTailwindStatus, get_and_set_state_json, stateCallback, toggleTailscaleOnOff
 import logging
 import webbrowser
 
-
+path = os.path.expanduser("~/.TailscaleSystemTray")
 logging.basicConfig(
-    filename='systray.log',
+    filename=os.path.join(path, 'systray.log'),
     level=logging.DEBUG,
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
@@ -25,8 +26,8 @@ class SystemTray:
         self.is_exitnode = stateCallback("exitNode")
         self.is_ssh = stateCallback("ssh")
         self.is_acceptroutes = stateCallback("AcceptRoutes")
-        self.all_exit_nodes = list(Use_json()["ExitNodes"].keys())
-        self.selected_exit_node = Use_json()["UsedExitNode"]
+        self.all_exit_nodes = list(get_and_set_state_json()["ExitNodes"].keys())
+        self.selected_exit_node = get_and_set_state_json()["UsedExitNode"]
         self.shutdown_event = threading.Event()
 
         logging.debug("systray made")
@@ -78,7 +79,7 @@ class SystemTray:
             setExitNode("off")
         else:
             setExitNode(self.selected_exit_node)
-        Use_json({"UsedExitNode": self.selected_exit_node})
+        get_and_set_state_json({"UsedExitNode": self.selected_exit_node})
         logging.debug(f"Selected exit node: {self.selected_exit_node}")
         self._create_menu()
 
@@ -180,9 +181,14 @@ class SystemTray:
         try:
             image = Image.open("logo.png")
         except FileNotFoundError:
-            image = Image.new('RGB', (64, 64), color='blue')
-            draw = ImageDraw.Draw(image)
-            draw.text((10, 10), "TS", fill='white')
+            try:
+                response = requests.get("https://tailscale.gallerycdn.vsassets.io/extensions/tailscale/vscode-tailscale/1.0.0/1698786256133/Microsoft.VisualStudio.Services.Icons.Default")
+                response.raise_for_status()
+                image = Image.open(BytesIO(response.content))
+            except:
+                image = Image.new('RGB', (64, 64), color='blue')
+                draw = ImageDraw.Draw(image)
+                draw.text((10, 10), "TS", fill='white')
 
         image.save("temp_icon.png")
         pixmap = QPixmap("temp_icon.png")
